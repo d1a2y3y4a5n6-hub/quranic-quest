@@ -14,7 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      adhkar: {
+        Row: {
+          arabic: string
+          default_count: number
+          id: string
+          slug: string
+          sort_order: number
+          translation: string
+          transliteration: string
+        }
+        Insert: {
+          arabic: string
+          default_count?: number
+          id?: string
+          slug: string
+          sort_order?: number
+          translation: string
+          transliteration: string
+        }
+        Update: {
+          arabic?: string
+          default_count?: number
+          id?: string
+          slug?: string
+          sort_order?: number
+          translation?: string
+          transliteration?: string
+        }
+        Relationships: []
+      }
+      dhikr_counts: {
+        Row: {
+          adhkar_id: string
+          count: number
+          day: string
+          id: string
+          target: number
+          user_id: string
+        }
+        Insert: {
+          adhkar_id: string
+          count?: number
+          day?: string
+          id?: string
+          target?: number
+          user_id: string
+        }
+        Update: {
+          adhkar_id?: string
+          count?: number
+          day?: string
+          id?: string
+          target?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dhikr_counts_adhkar_id_fkey"
+            columns: ["adhkar_id"]
+            isOneToOne: false
+            referencedRelation: "adhkar"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_completions: {
+        Row: {
+          completed_on: string
+          correct: boolean
+          created_at: string
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_on?: string
+          correct?: boolean
+          created_at?: string
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed_on?: string
+          correct?: boolean
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_completions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          arabic: string
+          ayah_end: number
+          ayah_start: number
+          id: string
+          order_index: number
+          quiz_answer: number
+          quiz_options: Json
+          quiz_question: string
+          surah_name_ar: string
+          surah_name_en: string
+          surah_number: number
+          tafsir: string
+          title: string
+          translation: string
+        }
+        Insert: {
+          arabic: string
+          ayah_end: number
+          ayah_start: number
+          id?: string
+          order_index: number
+          quiz_answer: number
+          quiz_options: Json
+          quiz_question: string
+          surah_name_ar: string
+          surah_name_en: string
+          surah_number: number
+          tafsir: string
+          title: string
+          translation: string
+        }
+        Update: {
+          arabic?: string
+          ayah_end?: number
+          ayah_start?: number
+          id?: string
+          order_index?: number
+          quiz_answer?: number
+          quiz_options?: Json
+          quiz_question?: string
+          surah_name_ar?: string
+          surah_name_en?: string
+          surah_number?: number
+          tafsir?: string
+          title?: string
+          translation?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          blocked_apps: string[]
+          dhikr_target: number
+          lessons_target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_apps?: string[]
+          dhikr_target?: number
+          lessons_target?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_apps?: string[]
+          dhikr_target?: number
+          lessons_target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
