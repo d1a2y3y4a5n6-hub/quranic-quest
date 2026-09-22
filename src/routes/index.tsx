@@ -56,12 +56,12 @@ function Landing() {
             body="Every lesson is a passage with its translation and tafsir, then a short quiz. Finish the last lesson and you have finished the Quran."
           />
           <Feature
-            glyph="📿"
+            glyph="۩"
             title="Adhkar you actually keep"
             body="A tasbih counter for subhanallah, alhamdulillah and more, counted toward today's target."
           />
           <Feature
-            glyph="🔒"
+            glyph="✧"
             title="A lock with a reason"
             body="Instagram, TikTok, whatever you choose — shown as locked until both parts of the target are met."
           />
