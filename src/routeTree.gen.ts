@@ -17,6 +17,8 @@ import { Route as AuthenticatedPathRouteImport } from './routes/_authenticated/p
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedLessonLessonIdRouteImport } from './routes/_authenticated/lesson.$lessonId'
+import { Route as AuthenticatedReadIndexRouteImport } from './routes/_authenticated/read.index'
+import { Route as AuthenticatedReadSurahIdRouteImport } from './routes/_authenticated/read.$surahId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +60,17 @@ const AuthenticatedLessonLessonIdRoute =
     path: '/lesson/$lessonId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReadIndexRoute = AuthenticatedReadIndexRouteImport.update({
+  id: '/read/',
+  path: '/read/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReadSurahIdRoute =
+  AuthenticatedReadSurahIdRouteImport.update({
+    id: '/read/$surahId',
+    path: '/read/$surahId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -67,6 +80,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/today': typeof AuthenticatedTodayRoute
   '/lesson/$lessonId': typeof AuthenticatedLessonLessonIdRoute
+  '/read/$surahId': typeof AuthenticatedReadSurahIdRoute
+  '/read/': typeof AuthenticatedReadIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,6 +91,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/today': typeof AuthenticatedTodayRoute
   '/lesson/$lessonId': typeof AuthenticatedLessonLessonIdRoute
+  '/read/$surahId': typeof AuthenticatedReadSurahIdRoute
+  '/read': typeof AuthenticatedReadIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +104,8 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/lesson/$lessonId': typeof AuthenticatedLessonLessonIdRoute
+  '/_authenticated/read/$surahId': typeof AuthenticatedReadSurahIdRoute
+  '/_authenticated/read/': typeof AuthenticatedReadIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +117,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/lesson/$lessonId'
+    | '/read/$surahId'
+    | '/read/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +128,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/lesson/$lessonId'
+    | '/read/$surahId'
+    | '/read'
   id:
     | '__root__'
     | '/'
@@ -117,6 +140,8 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/today'
     | '/_authenticated/lesson/$lessonId'
+    | '/_authenticated/read/$surahId'
+    | '/_authenticated/read/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,6 +208,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLessonLessonIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/read/': {
+      id: '/_authenticated/read/'
+      path: '/read'
+      fullPath: '/read/'
+      preLoaderRoute: typeof AuthenticatedReadIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/read/$surahId': {
+      id: '/_authenticated/read/$surahId'
+      path: '/read/$surahId'
+      fullPath: '/read/$surahId'
+      preLoaderRoute: typeof AuthenticatedReadSurahIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -192,6 +231,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedLessonLessonIdRoute: typeof AuthenticatedLessonLessonIdRoute
+  AuthenticatedReadSurahIdRoute: typeof AuthenticatedReadSurahIdRoute
+  AuthenticatedReadIndexRoute: typeof AuthenticatedReadIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -200,6 +241,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedLessonLessonIdRoute: AuthenticatedLessonLessonIdRoute,
+  AuthenticatedReadSurahIdRoute: AuthenticatedReadSurahIdRoute,
+  AuthenticatedReadIndexRoute: AuthenticatedReadIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

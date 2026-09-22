@@ -9,7 +9,7 @@ function NavItem({
   label,
   glyph,
 }: {
-  to: "/today" | "/path" | "/adhkar" | "/settings";
+  to: "/today" | "/path" | "/read" | "/adhkar" | "/settings";
   label: string;
   glyph: string;
 }) {
@@ -76,9 +76,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 pb-4">{children}</main>
 
       <nav className="sticky bottom-0 bg-background/95 px-5 pb-5 pt-3 backdrop-blur">
-        <div className="card-noor grid grid-cols-4 py-2">
+        <div className="card-noor grid grid-cols-5 py-2">
           <NavItem to="/today" label="Today" glyph="◉" />
-          <NavItem to="/path" label="Quran" glyph="۞" />
+          <NavItem to="/path" label="Lessons" glyph="۞" />
+          <NavItem to="/read" label="Read" glyph="❁" />
           <NavItem to="/adhkar" label="Adhkar" glyph="۩" />
           <NavItem to="/settings" label="Target" glyph="◈" />
         </div>
