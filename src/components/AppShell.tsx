@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="card-noor grid grid-cols-5 py-2">
           <NavItem to="/today" label="Today" glyph="◉" />
           <NavItem to="/path" label="Lessons" glyph="۞" />
-          <NavItem to="/read" label="Read" glyph="📖" />
+          <NavItem to="/read" label="Read" glyph="❁" />
           <NavItem to="/adhkar" label="Adhkar" glyph="۩" />
           <NavItem to="/settings" label="Target" glyph="◈" />
         </div>
