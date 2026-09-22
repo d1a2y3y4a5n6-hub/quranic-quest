@@ -38,6 +38,7 @@ function SurahPage() {
         revelationType: string;
         ayahs: Ayah[];
       }>;
+      if (!arabic || !english) throw new Error("Could not load this surah");
       return {
         nameAr: arabic.name,
         nameEn: arabic.englishName,
