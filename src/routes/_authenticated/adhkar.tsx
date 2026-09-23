@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAdhkar, useDhikrToday, useIncrementDhikr, useDailyStatus } from "@/lib/noor";
+import { RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/adhkar")({
   component: AdhkarPage,
@@ -20,6 +22,19 @@ function AdhkarPage() {
   const currentCount = current ? (rowFor(current.id)?.count ?? 0) : 0;
   const currentTarget = current ? (rowFor(current.id)?.target ?? current.default_count) : 0;
   const pct = currentTarget ? Math.min(100, Math.round((currentCount / currentTarget) * 100)) : 0;
+
+  if (adhkar.isLoading || counts.isLoading) {
+    return <p className="px-5 text-[13px] text-muted-foreground">Opening your Adhkar…</p>;
+  }
+
+  if (adhkar.isError || counts.isError) {
+    return (
+      <div className="px-5">
+        <h1 className="font-display text-[27px] font-semibold">Adhkar</h1>
+        <p className="mt-2 text-[13px] text-destructive">The counter could not load. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-5">
@@ -50,7 +65,7 @@ function AdhkarPage() {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={() =>
               increment.mutate({
                 adhkarId: current.id,
@@ -58,11 +73,13 @@ function AdhkarPage() {
                 target: currentTarget,
               })
             }
-            className="mt-5 w-full rounded-full bg-primary py-4 text-[15px] font-semibold text-primary-foreground active:scale-[0.99]"
+            disabled={increment.isPending}
+            className="mt-5 h-auto w-full rounded-full py-4 text-[15px] font-semibold active:scale-[0.99]"
           >
-            Tap to count
-          </button>
-          <button
+            {increment.isPending ? "Counting…" : "Tap to count"}
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() =>
               increment.mutate({
                 adhkarId: current.id,
@@ -71,10 +88,14 @@ function AdhkarPage() {
                 by: -1,
               })
             }
+            disabled={increment.isPending || currentCount === 0}
             className="mt-2 text-[12px] text-muted-foreground"
           >
-            Undo one
-          </button>
+            <RotateCcw aria-hidden="true" className="size-3.5" /> Undo one
+          </Button>
+          {increment.isError && (
+            <p className="mt-2 text-[12px] text-destructive">That count was not saved. Please tap again.</p>
+          )}
         </section>
       )}
 
@@ -85,10 +106,12 @@ function AdhkarPage() {
           const target = row?.target ?? d.default_count;
           const selected = current?.id === d.id;
           return (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               key={d.id}
               onClick={() => setActive(d.id)}
-              className={`block w-full p-3.5 text-left ${
+              className={`block h-auto w-full whitespace-normal p-3.5 text-left ${
                 selected ? "rounded-2xl bg-brand-soft" : "card-noor"
               }`}
             >
@@ -109,7 +132,7 @@ function AdhkarPage() {
                   style={{ width: `${target ? Math.min(100, (count / target) * 100) : 0}%` }}
                 />
               </div>
-            </button>
+            </Button>
           );
         })}
       </div>
