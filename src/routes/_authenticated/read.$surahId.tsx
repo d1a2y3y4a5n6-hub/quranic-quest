@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useQuranBookmark } from "@/lib/quran-bookmark";
 
 export const Route = createFileRoute("/_authenticated/read/$surahId")({
   head: () => ({
@@ -21,6 +24,7 @@ type Ayah = { numberInSurah: number; text: string };
 function SurahPage() {
   const { surahId } = Route.useParams();
   const [showTranslation, setShowTranslation] = useState(true);
+  const { bookmark, saveBookmark, clearBookmark } = useQuranBookmark();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["surah", surahId],
@@ -53,6 +57,12 @@ function SurahPage() {
     },
   });
 
+  useEffect(() => {
+    if (!data || !window.location.hash.startsWith("#ayah-")) return;
+    const id = window.location.hash.slice(1);
+    window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "center" }));
+  }, [data]);
+
   return (
     <div className="px-5">
       <Link to="/read" className="text-[12px] font-semibold text-muted-foreground">
@@ -72,20 +82,21 @@ function SurahPage() {
             <p className="font-arabic text-[30px] leading-tight">{data.nameAr}</p>
             <p className="mt-1.5 font-display text-[17px] font-semibold">{data.nameEn}</p>
             <p className="mt-0.5 text-[12px] opacity-80">
-              {data.meaning} · {data.ayahs.length} ayahs · {data.revelation}
+               {data.meaning} · {data.ayahs.length} ayahs · {data.revelation === "Meccan" ? "Makki" : "Madani"}
             </p>
           </div>
 
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowTranslation((v) => !v)}
-            className="mt-4 w-full rounded-full border border-border py-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+            className="mt-4 w-full rounded-full text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
           >
             {showTranslation ? "Arabic only" : "Show translation"}
-          </button>
+          </Button>
 
           <ul className="mt-4 space-y-2.5 pb-4">
             {data.ayahs.map((a) => (
-              <li key={a.number} className="card-noor p-4">
+              <li id={`ayah-${a.number}`} key={a.number} className="card-noor scroll-mt-24 p-4">
                 <div className="flex items-start gap-3">
                   <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-gold-soft text-[11px] font-semibold text-accent">
                     {a.number}
@@ -93,6 +104,24 @@ function SurahPage() {
                   <p className="text-arabic flex-1 font-arabic text-[22px] leading-[2]">
                     {a.arabic}
                   </p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={bookmark?.surahNumber === Number(surahId) && bookmark.ayahNumber === a.number ? `Remove bookmark from ayah ${a.number}` : `Bookmark ayah ${a.number}`}
+                    title={bookmark?.surahNumber === Number(surahId) && bookmark.ayahNumber === a.number ? "Remove bookmark" : "Bookmark this ayah"}
+                    onClick={() => {
+                      const selected = bookmark?.surahNumber === Number(surahId) && bookmark.ayahNumber === a.number;
+                      if (selected) clearBookmark();
+                      else saveBookmark({ surahNumber: Number(surahId), surahName: data.nameEn, ayahNumber: a.number });
+                    }}
+                    className="shrink-0 rounded-full text-primary"
+                  >
+                    {bookmark?.surahNumber === Number(surahId) && bookmark.ayahNumber === a.number ? (
+                      <BookmarkCheck className="fill-current" />
+                    ) : (
+                      <Bookmark />
+                    )}
+                  </Button>
                 </div>
                 {showTranslation && (
                   <p className="mt-2.5 border-t border-border pt-2.5 text-[13px] leading-relaxed text-muted-foreground">

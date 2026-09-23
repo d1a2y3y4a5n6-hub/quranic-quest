@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Bookmark } from "lucide-react";
+import { useQuranBookmark } from "@/lib/quran-bookmark";
 
 export const Route = createFileRoute("/_authenticated/read/")({
   head: () => ({
@@ -39,6 +41,7 @@ export function useSurahList() {
 
 function ReadIndex() {
   const { data, isLoading, isError } = useSurahList();
+  const { bookmark } = useQuranBookmark();
 
   return (
     <div className="px-5">
@@ -51,6 +54,26 @@ function ReadIndex() {
       </p>
 
       <div className="geo-divider mt-5" />
+
+      {bookmark && (
+        <Link
+          to="/read/$surahId"
+          params={{ surahId: String(bookmark.surahNumber) }}
+          hash={`ayah-${bookmark.ayahNumber}`}
+          className="mt-4 flex items-center gap-3 rounded-xl bg-brand-soft p-3.5 text-primary"
+        >
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+            <Bookmark aria-hidden="true" className="size-4 fill-current" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em]">Continue reading</span>
+            <span className="mt-0.5 block truncate text-[13px] font-semibold">
+              {bookmark.surahName} · ayah {bookmark.ayahNumber}
+            </span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+      )}
 
       {isLoading && (
         <p className="mt-6 text-[13px] text-muted-foreground">Loading surahs…</p>
@@ -75,7 +98,7 @@ function ReadIndex() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold">{s.englishName}</span>
                 <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
-                  {s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType}
+                  {s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType === "Meccan" ? "Makki" : "Madani"}
                 </span>
               </span>
               <span className="shrink-0 font-arabic text-[17px] leading-none opacity-80">

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDailyStatus, useProfile } from "@/lib/noor";
+import { AppIcon } from "@/components/AppIcon";
 
 export const Route = createFileRoute("/_authenticated/today")({
   component: TodayPage,
@@ -153,9 +154,11 @@ function TodayPage() {
             {s.blockedApps.map((app) => (
               <span
                 key={app}
-                className="flex-1 rounded-lg bg-white/10 px-3 py-2 text-center text-[12px] font-medium"
+                aria-label={app}
+                title={app}
+                className="grid size-10 place-items-center rounded-lg bg-white/10"
               >
-                {app}
+                <AppIcon name={app} />
               </span>
             ))}
             {s.blockedApps.length === 0 && (

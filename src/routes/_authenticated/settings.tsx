@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "@/lib/noor";
+import { Check } from "lucide-react";
+import { AppIcon } from "@/components/AppIcon";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -90,17 +93,19 @@ function SettingsPage() {
           {SUGGESTED_APPS.map((app) => {
             const on = apps.includes(app);
             return (
-              <button
+              <Button
                 key={app}
+                type="button"
+                variant={on ? "default" : "outline"}
                 onClick={() => toggleApp(app)}
-                className={`rounded-full px-3.5 py-2 text-[12px] font-semibold ${
-                  on
-                    ? "bg-foreground text-background"
-                    : "border border-border bg-card text-muted-foreground"
-                }`}
+                aria-pressed={on}
+                aria-label={`${on ? "Stop blocking" : "Block"} ${app}`}
+                title={app}
+                className={`relative size-12 rounded-xl p-0 ${on ? "bg-foreground text-background hover:bg-foreground/90" : "text-muted-foreground"}`}
               >
-                {app}
-              </button>
+                <AppIcon name={app} />
+                {on && <Check className="absolute right-0.5 top-0.5 size-3" />}
+              </Button>
             );
           })}
         </div>
@@ -110,15 +115,15 @@ function SettingsPage() {
         </p>
       </section>
 
-      <button
+      <Button
         onClick={() =>
           update.mutate({ lessons_target: lessons, dhikr_target: dhikr, blocked_apps: apps })
         }
         disabled={update.isPending}
-        className="mt-4 w-full rounded-full bg-primary py-3.5 text-[14px] font-semibold text-primary-foreground disabled:opacity-60"
+        className="mt-4 h-auto w-full rounded-full py-3.5 text-[14px] font-semibold"
       >
         {update.isPending ? "Saving…" : update.isSuccess ? "Saved" : "Save target"}
-      </button>
+      </Button>
     </div>
   );
 }
