@@ -226,7 +226,24 @@ export function useIncrementDhikr() {
       );
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async ({ adhkarId, current, target, by = 1 }) => {
+      await qc.cancelQueries({ queryKey: ["dhikr", day] });
+      const previous = qc.getQueryData<DhikrCount[]>(["dhikr", day]) ?? [];
+      const nextCount = Math.max(0, current + by);
+      const found = previous.find((row) => row.adhkar_id === adhkarId);
+      const optimistic: DhikrCount = found
+        ? { ...found, count: nextCount }
+        : { id: `pending-${adhkarId}`, adhkar_id: adhkarId, day, count: nextCount, target };
+      qc.setQueryData<DhikrCount[]>(["dhikr", day], [
+        ...previous.filter((row) => row.adhkar_id !== adhkarId),
+        optimistic,
+      ]);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) qc.setQueryData(["dhikr", day], context.previous);
+    },
+    onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["dhikr", day] });
     },
   });
