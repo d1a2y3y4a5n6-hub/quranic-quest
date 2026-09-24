@@ -115,7 +115,7 @@ function LessonPage() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Read the passage</p>
             </div>
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-              Read slowly. Pause at the end of each ayah before moving on.
+              Read slowly once, pause at each ayah, then repeat the passage before continuing.
             </p>
             <div className="mt-3 space-y-2.5">
               {fullPassage.length > 0 ? fullPassage.map((ayah) => (
@@ -131,6 +131,11 @@ function LessonPage() {
                 </div>
               )}
             </div>
+            {passage.isError && (
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                The full passage could not load, so the saved lesson text is shown instead.
+              </p>
+            )}
           </section>
           <Button
             onClick={() => setStage("meaning")}
@@ -179,6 +184,14 @@ function LessonPage() {
             <p className="mt-1.5 text-[14px] leading-relaxed">
               Where does this passage meet your life today? Choose one idea to remember, and one small action that would turn its meaning into practice.
             </p>
+            <div className="mt-4 border-t border-primary/15 pt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">Make it personal</p>
+              <ol className="mt-2 space-y-2 text-[13px] leading-relaxed">
+                <li><span className="font-semibold text-accent">1.</span> Summarise the passage in one sentence, without looking back.</li>
+                <li><span className="font-semibold text-accent">2.</span> Name the quality of Allah, command, or warning that stands out most.</li>
+                <li><span className="font-semibold text-accent">3.</span> Form one intention you can carry into the rest of your day.</li>
+              </ol>
+            </div>
           </section>
           <div className="mt-4 flex gap-2">
             <Button variant="outline" onClick={() => setStage("meaning")} className="h-auto flex-1 rounded-full py-3.5">Back</Button>
@@ -245,18 +258,19 @@ function LessonPage() {
             It counts toward today&apos;s target and your place in the Quran.
           </p>
           <div className="mt-4 flex gap-2">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => navigate({ to: "/today" })}
-              className="flex-1 rounded-full bg-white/15 py-3 text-[13px] font-semibold"
+              className="h-auto flex-1 rounded-full bg-primary-foreground/15 py-3 text-[13px] font-semibold text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
             >
               Back to today
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => navigate({ to: "/path" })}
-              className="flex-1 rounded-full bg-background py-3 text-[13px] font-semibold text-foreground"
+              className="h-auto flex-1 rounded-full bg-background py-3 text-[13px] font-semibold text-foreground hover:bg-background/90"
             >
               Next lesson
-            </button>
+            </Button>
           </div>
         </section>
       )}
