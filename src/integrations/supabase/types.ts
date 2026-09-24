@@ -114,6 +114,41 @@ export type Database = {
           },
         ]
       }
+      lesson_quiz_questions: {
+        Row: {
+          answer: number
+          id: string
+          lesson_id: string
+          options: Json
+          question: string
+          sort_order: number
+        }
+        Insert: {
+          answer: number
+          id?: string
+          lesson_id: string
+          options: Json
+          question: string
+          sort_order?: number
+        }
+        Update: {
+          answer?: number
+          id?: string
+          lesson_id?: string
+          options?: Json
+          question?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_quiz_questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           arabic: string
@@ -165,21 +200,54 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_answers: {
+        Row: {
+          age: number
+          answers: Json
+          minutes_per_day: number
+          screen_hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number
+          answers?: Json
+          minutes_per_day?: number
+          screen_hours?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number
+          answers?: Json
+          minutes_per_day?: number
+          screen_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           display_name: string | null
           id: string
+          intention: string | null
+          onboarded_at: string | null
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          intention?: string | null
+          onboarded_at?: string | null
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          intention?: string | null
+          onboarded_at?: string | null
         }
         Relationships: []
       }

@@ -70,13 +70,15 @@ export function useProfile() {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, intention, onboarded_at")
         .eq("id", user.id)
         .maybeSingle();
       return {
         id: user.id,
         email: user.email ?? "",
         displayName: data?.display_name ?? (user.email ?? "friend").split("@")[0],
+        intention: data?.intention ?? null,
+        onboardedAt: data?.onboarded_at ?? null,
       };
     },
   });
@@ -302,5 +304,144 @@ export function useDailyStatus() {
     streak: streakFrom(completed),
     blockedApps: settings.data?.blocked_apps ?? [],
     totalDone: completed.length,
+  };
+}
+
+export type QuizQuestion = { id: string; question: string; options: string[]; answer: number };
+
+export function useQuizQuestions(lessonId: string) {
+  return useQuery({
+    queryKey: ["quiz", lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lesson_quiz_questions")
+        .select("id, question, options, answer")
+        .eq("lesson_id", lessonId)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as QuizQuestion[];
+    },
+  });
+}
+
+export type OnboardingAnswers = Record<string, unknown>;
+
+export function useOnboarding() {
+  return useQuery({
+    queryKey: ["onboarding"],
+    queryFn: async () => {
+      const uid = await currentUserId();
+      if (!uid) return null;
+      const { data } = await supabase
+        .from("onboarding_answers")
+        .select("answers, screen_hours, age, minutes_per_day")
+        .eq("user_id", uid)
+        .maybeSingle();
+      return data;
+    },
+  });
+}
+
+export function lessonsForMinutes(minutes: number) {
+  return Math.max(1, Math.min(10, Math.round(minutes / 6)));
+}
+
+/** Life maths used by onboarding results. */
+export function lifeMaths(screenHours: number, age: number, minutes: number) {
+  const yearsLeft = Math.max(1, 80 - age);
+  const scrollYears = (screenHours * 365 * yearsLeft) / (24 * 365);
+  const deenYears = ((minutes / 60) * 365 * yearsLeft) / (24 * 365);
+  return {
+    yearsLeft,
+    hoursPerYear: Math.round(screenHours * 365),
+    scrollYears,
+    deenYears,
+    // waking-hours framing (16h days) — how it feels
+    scrollWakingYears: (screenHours * yearsLeft) / 16,
+    deenWakingYears: ((minutes / 60) * yearsLeft) / 16,
+  };
+}
+
+export function useSaveOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      answers: OnboardingAnswers;
+      screenHours: number;
+      age: number;
+      minutes: number;
+      dhikrTarget: number;
+      blockedApps: string[];
+      intention: string;
+    }) => {
+      const uid = await currentUserId();
+      if (!uid) throw new Error("Not signed in");
+      const { error: e1 } = await supabase.from("onboarding_answers").upsert({
+        user_id: uid,
+        answers: input.answers as never,
+        screen_hours: input.screenHours,
+        age: input.age,
+        minutes_per_day: input.minutes,
+        updated_at: new Date().toISOString(),
+      });
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("user_settings").upsert({
+        user_id: uid,
+        lessons_target: lessonsForMinutes(input.minutes),
+        dhikr_target: input.dhikrTarget,
+        blocked_apps: input.blockedApps,
+        updated_at: new Date().toISOString(),
+      });
+      if (e2) throw e2;
+      const { error: e3 } = await supabase
+        .from("profiles")
+        .update({ onboarded_at: new Date().toISOString(), intention: input.intention || null })
+        .eq("id", uid);
+      if (e3) throw e3;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries();
+    },
+  });
+}
+
+export const DAYS_PER_TREE = 60;
+export const TREES_PER_QURAN = 10;
+
+/** Days where both the lesson and dhikr targets were met. */
+export function useGarden() {
+  const completions = useCompletions();
+  const settings = useSettings();
+  const dhikr = useQuery({
+    queryKey: ["dhikr-all"],
+    queryFn: async () => {
+      const uid = await currentUserId();
+      if (!uid) return [];
+      const { data, error } = await supabase
+        .from("dhikr_counts")
+        .select("day, count")
+        .eq("user_id", uid);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const lt = settings.data?.lessons_target ?? 1;
+  const dt = settings.data?.dhikr_target ?? 100;
+  const lessonsByDay = new Map<string, number>();
+  for (const c of completions.data ?? []) lessonsByDay.set(c.completed_on, (lessonsByDay.get(c.completed_on) ?? 0) + 1);
+  const dhikrByDay = new Map<string, number>();
+  for (const d of dhikr.data ?? []) dhikrByDay.set(d.day, (dhikrByDay.get(d.day) ?? 0) + d.count);
+  let metDays = 0;
+  for (const [day, n] of lessonsByDay) if (n >= lt && (dhikrByDay.get(day) ?? 0) >= dt) metDays += 1;
+  const trees = Math.floor(metDays / DAYS_PER_TREE);
+  const progress = (metDays % DAYS_PER_TREE) / DAYS_PER_TREE;
+  return {
+    loading: completions.isLoading || settings.isLoading || dhikr.isLoading,
+    metDays,
+    trees,
+    progress,
+    daysToNext: DAYS_PER_TREE - (metDays % DAYS_PER_TREE),
+    qurans: Math.floor(trees / TREES_PER_QURAN),
+    treesToNextQuran: TREES_PER_QURAN - (trees % TREES_PER_QURAN),
   };
 }

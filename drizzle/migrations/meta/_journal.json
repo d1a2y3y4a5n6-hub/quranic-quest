@@ -15,6 +15,13 @@
       "when": 1790218529621,
       "tag": "0001_grant_dhikr_counts_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790224915713,
+      "tag": "0002_onboarding_and_quiz_questions",
+      "breakpoints": true
     }
   ]
 }
