@@ -1,6 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { TreeDeciduous } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useDailyStatus } from "@/lib/noor";
 
@@ -30,6 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const status = useDailyStatus();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const initials = (profile.data?.displayName ?? "")
     .split(" ")
@@ -43,6 +45,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     qc.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
+  }
+
+  if (pathname === "/onboarding") {
+    return (
+      <div className="mx-auto min-h-screen w-full max-w-[460px] bg-background">
+        <div className="geo-pattern h-1.5 w-full opacity-30" />
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -59,10 +70,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-1.5">
-            <span className="text-sm leading-none text-accent">✦</span>
+          <Link
+            to="/garden"
+            aria-label={`Streak ${status.streak} days — open your garden`}
+            className="flex items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-1.5"
+          >
+            <TreeDeciduous aria-hidden="true" className="size-4 text-primary" />
             <span className="text-[13px] font-semibold">{status.streak}</span>
-          </span>
+          </Link>
           <button
             onClick={signOut}
             aria-label="Sign out"

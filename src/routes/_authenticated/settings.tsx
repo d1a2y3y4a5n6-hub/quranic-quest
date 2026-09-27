@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "@/lib/noor";
 import { Check } from "lucide-react";
@@ -124,6 +124,12 @@ function SettingsPage() {
       >
         {update.isPending ? "Saving…" : update.isSuccess ? "Saved" : "Save target"}
       </Button>
+      <Link
+        to="/onboarding"
+        className="mt-3 block text-center text-[13px] font-semibold text-primary"
+      >
+        Retake the starting questions and see your numbers
+      </Link>
     </div>
   );
 }

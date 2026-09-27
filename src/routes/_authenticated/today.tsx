@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useDailyStatus, useProfile } from "@/lib/noor";
+import { TreeDeciduous } from "lucide-react";
+import { useDailyStatus, useGarden, useProfile } from "@/lib/noor";
 import { AppIcon } from "@/components/AppIcon";
 
 export const Route = createFileRoute("/_authenticated/today")({
@@ -28,6 +29,7 @@ function Ring({ value, label }: { value: number; label: string }) {
 function TodayPage() {
   const profile = useProfile();
   const s = useDailyStatus();
+  const garden = useGarden();
 
   const quranRatio = s.lessonsTarget ? s.lessonsToday / s.lessonsTarget : 0;
   const dhikrRatio = s.dhikrTarget ? s.dhikrToday / s.dhikrTarget : 0;
@@ -41,6 +43,22 @@ function TodayPage() {
       <h1 className="mt-0.5 font-display text-[27px] font-semibold leading-tight">
         Today&apos;s intention
       </h1>
+      {profile.data?.intention && (
+        <p className="mt-1 text-[13px] italic text-muted-foreground">“{profile.data.intention}”</p>
+      )}
+
+      <Link to="/garden" className="card-noor mt-4 flex items-center gap-3 p-4">
+        <TreeDeciduous aria-hidden="true" className="size-9 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Your tree</p>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round(garden.progress * 100)}%` }} />
+          </div>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            {garden.trees} grown · {garden.qurans} Quran{garden.qurans === 1 ? "" : "s"} pledged
+          </p>
+        </div>
+      </Link>
 
       {/* Quran target */}
       <section className="mt-4">
