@@ -28,7 +28,8 @@ function Quiz({
       const order = item.options.map((_, i) => i).sort(() => Math.random() - 0.5);
       return { ...item, options: order.map((i) => item.options[i]), answer: order.indexOf(item.answer) };
     });
-  }, [q.data, fallback]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data]);
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [score, setScore] = useState(0);
