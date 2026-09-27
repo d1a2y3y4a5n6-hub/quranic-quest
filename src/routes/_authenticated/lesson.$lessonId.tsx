@@ -1,13 +1,138 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Brain, Check, Clock3, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useCompleteLesson, useLessons } from "@/lib/noor";
+import { useCompleteLesson, useLessons, useQuizQuestions, type QuizQuestion } from "@/lib/noor";
 
 export const Route = createFileRoute("/_authenticated/lesson/$lessonId")({
   component: LessonPage,
 });
+
+function Quiz({
+  lessonId,
+  fallback,
+  saving,
+  onFinish,
+}: {
+  lessonId: string;
+  fallback: QuizQuestion;
+  saving: boolean;
+  onFinish: (passed: boolean) => Promise<void>;
+}) {
+  const q = useQuizQuestions(lessonId);
+  const questions = useMemo(() => {
+    const list = q.data && q.data.length > 0 ? q.data : [fallback];
+    // shuffle option order so the answer isn't always in the same spot
+    return list.map((item) => {
+      const order = item.options.map((_, i) => i).sort(() => Math.random() - 0.5);
+      return { ...item, options: order.map((i) => item.options[i]), answer: order.indexOf(item.answer) };
+    });
+  }, [q.data, fallback]);
+  const [index, setIndex] = useState(0);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  if (q.isLoading) return <p className="mt-4 text-[13px] text-muted-foreground">Preparing your quiz…</p>;
+
+  const total = questions.length;
+  const passed = score / total >= 0.6;
+
+  if (finished) {
+    return (
+      <section className="card-noor mt-4 p-5 text-center">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Your score</p>
+        <p className="mt-1 font-display text-[36px] font-semibold">
+          {score} / {total}
+        </p>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          {passed ? "Well done — you understood this passage." : "You need 60% to pass. Review and try again."}
+        </p>
+        {passed ? (
+          <Button onClick={() => onFinish(true)} disabled={saving} className="mt-4 h-auto w-full rounded-full py-3.5">
+            {saving ? "Saving…" : "Mark lesson complete"}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              setIndex(0);
+              setPicked(null);
+              setScore(0);
+              setFinished(false);
+            }}
+            className="mt-4 h-auto w-full rounded-full py-3.5"
+          >
+            Try the quiz again
+          </Button>
+        )}
+      </section>
+    );
+  }
+
+  const current = questions[index];
+  return (
+    <section className="card-noor mt-4 p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+          Question {index + 1} of {total}
+        </p>
+        <div className="flex gap-1">
+          {questions.map((_, i) => (
+            <span key={i} className={`h-1.5 w-5 rounded-full ${i <= index ? "bg-accent" : "bg-muted"}`} />
+          ))}
+        </div>
+      </div>
+      <p className="mt-2 text-[15px] font-semibold leading-snug">{current.question}</p>
+      <ul className="mt-3 space-y-2">
+        {current.options.map((option, i) => {
+          const reveal = picked !== null;
+          const isAnswer = i === current.answer;
+          return (
+            <li key={option}>
+              <Button
+                disabled={reveal}
+                onClick={() => {
+                  setPicked(i);
+                  if (i === current.answer) setScore((s) => s + 1);
+                }}
+                variant="outline"
+                className={`h-auto w-full justify-start whitespace-normal rounded-xl px-3.5 py-3 text-left text-[13px] disabled:opacity-100 ${
+                  reveal && isAnswer
+                    ? "border-primary bg-brand-soft font-semibold text-primary"
+                    : picked === i
+                      ? "border-destructive bg-card text-destructive"
+                      : "border-border bg-card"
+                }`}
+              >
+                {option}
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+      {picked !== null && (
+        <>
+          <p className="mt-3 text-[13px] font-semibold">
+            {picked === current.answer ? "Correct — well done." : "Not quite. The answer is highlighted."}
+          </p>
+          <Button
+            onClick={() => {
+              if (index + 1 >= total) setFinished(true);
+              else {
+                setIndex(index + 1);
+                setPicked(null);
+              }
+            }}
+            className="mt-3 h-auto w-full rounded-full py-3.5"
+          >
+            {index + 1 >= total ? "See my score" : "Next question"}
+          </Button>
+        </>
+      )}
+    </section>
+  );
+}
 
 function LessonPage() {
   const { lessonId } = Route.useParams();
@@ -16,7 +141,6 @@ function LessonPage() {
   const navigate = useNavigate();
 
   const [stage, setStage] = useState<"passage" | "meaning" | "reflect" | "quiz" | "done">("passage");
-  const [picked, setPicked] = useState<number | null>(null);
 
   const lesson = (lessons.data ?? []).find((l) => l.id === lessonId);
   const passage = useQuery({
@@ -58,13 +182,6 @@ function LessonPage() {
     );
   }
 
-  const correct = picked === lesson.quiz_answer;
-
-  async function finish() {
-    if (!lesson) return;
-    await complete.mutateAsync({ lessonId: lesson.id, correct });
-    setStage("done");
-  }
 
   const fullPassage = passage.data ?? [];
   const stageNumber = stage === "passage" ? 1 : stage === "meaning" ? 2 : stage === "reflect" ? 3 : stage === "quiz" ? 4 : 4;
@@ -157,7 +274,8 @@ function LessonPage() {
               {fullPassage.length > 0 ? fullPassage.map((ayah) => (
                 <div key={ayah.number} className="card-noor p-4">
                   <p className="text-[11px] font-semibold text-accent">Ayah {ayah.number}</p>
-                  <p className="mt-1.5 text-[14px] leading-relaxed">{ayah.english}</p>
+                  <p className="text-arabic mt-2 text-[20px] text-foreground">{ayah.arabic}</p>
+                  <p className="mt-2 text-[14px] leading-relaxed">{ayah.english}</p>
                 </div>
               )) : (
                 <div className="card-noor p-4"><p className="text-[14px] leading-relaxed">{lesson.translation}</p></div>
@@ -201,52 +319,15 @@ function LessonPage() {
       )}
 
       {stage === "quiz" && (
-        <section className="card-noor mt-4 p-4">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            Check your understanding
-          </p>
-          <p className="mt-1.5 text-[15px] font-semibold leading-snug">{lesson.quiz_question}</p>
-          <ul className="mt-3 space-y-2">
-            {lesson.quiz_options.map((option, i) => {
-              const chosen = picked === i;
-              const reveal = picked !== null;
-              const isAnswer = i === lesson.quiz_answer;
-              return (
-                <li key={option}>
-                   <Button
-                    disabled={reveal}
-                    onClick={() => setPicked(i)}
-                     variant="outline"
-                     className={`h-auto w-full whitespace-normal rounded-xl px-3.5 py-3 text-left text-[13px] ${
-                      reveal && isAnswer
-                        ? "border-primary bg-brand-soft font-semibold text-primary"
-                        : chosen
-                          ? "border-destructive bg-card text-destructive"
-                          : "border-border bg-card"
-                    }`}
-                  >
-                    {option}
-                   </Button>
-                </li>
-              );
-            })}
-          </ul>
-
-          {picked !== null && (
-            <>
-              <p className="mt-3 text-[13px] font-semibold">
-                {correct ? "Correct — well done." : "Not quite. The answer is highlighted."}
-              </p>
-               <Button
-                onClick={finish}
-                disabled={complete.isPending}
-                 className="mt-3 h-auto w-full rounded-full py-3.5 text-[14px] font-semibold"
-              >
-                {complete.isPending ? "Saving…" : "Mark lesson complete"}
-               </Button>
-            </>
-          )}
-        </section>
+        <Quiz
+          lessonId={lesson.id}
+          fallback={{ id: "f", question: lesson.quiz_question, options: lesson.quiz_options, answer: lesson.quiz_answer }}
+          saving={complete.isPending}
+          onFinish={async (passed) => {
+            await complete.mutateAsync({ lessonId: lesson.id, correct: passed });
+            setStage("done");
+          }}
+        />
       )}
 
       {stage === "done" && (
