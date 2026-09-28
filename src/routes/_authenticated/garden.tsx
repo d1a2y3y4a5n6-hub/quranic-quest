@@ -6,9 +6,9 @@ export const Route = createFileRoute("/_authenticated/garden")({
   head: () => ({
     meta: [
       { title: "Your garden — Noor" },
-      { name: "description", content: "Grow a tree with every day you meet your target. Every 10 trees, a Quran is pledged in your name." },
+      { name: "description", content: "Grow a tree with every day you meet your target. Every 6 consistent months, a Quran is pledged in your name." },
       { property: "og:title", content: "Your garden — Noor" },
-      { property: "og:description", content: "Grow trees with your streak and pledge Qurans in your name." },
+      { property: "og:description", content: "Grow trees with your streak and pledge a Quran every 6 consistent months." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -18,7 +18,11 @@ export const Route = createFileRoute("/_authenticated/garden")({
 
 function Garden() {
   const g = useGarden();
-  const stage = g.progress < 0.25 ? "Seed" : g.progress < 0.6 ? "Sapling" : "Young tree";
+  const stage =
+    g.progress < 0.15 ? "Seed" :
+    g.progress < 0.35 ? "Sprout" :
+    g.progress < 0.6 ? "Sapling" :
+    g.progress < 0.85 ? "Young tree" : "Full tree";
   const size = 40 + g.progress * 80;
 
   return (
@@ -69,7 +73,7 @@ function Garden() {
       <section className="mt-4 flex gap-3 rounded-xl bg-gold-soft p-4">
         <BookHeart aria-hidden="true" className="size-5 shrink-0 text-accent" />
         <p className="text-[13px] leading-relaxed">
-          Every {TREES_PER_QURAN} trees, one Quran is pledged to be donated in your name. Pledges are recorded here — the donation partner is coming soon.
+          Every {TREES_PER_QURAN} trees — 6 consistent months — one Quran is pledged to be donated in your name. Pledges are recorded here — the donation partner is coming soon.
         </p>
       </section>
     </div>
