@@ -87,7 +87,7 @@ function Onboarding() {
       body: (
         <div className="mt-6">
           <p className="text-center font-display text-[48px] font-semibold">{hours}h</p>
-          <Slider value={[hours]} min={0.5} max={12} step={0.5} onValueChange={([v]) => setHours(v)} className="mt-4" />
+          <Slider value={[hours]} min={0.5} max={12} step={0.5} onValueChange={([v]) => setHours(v ?? 3)} className="mt-4" />
         </div>
       ),
     },
@@ -138,7 +138,7 @@ function Onboarding() {
       body: (
         <div className="mt-6">
           <p className="text-center font-display text-[48px] font-semibold">{age}</p>
-          <Slider value={[age]} min={10} max={75} step={1} onValueChange={([v]) => setAge(v)} className="mt-4" />
+          <Slider value={[age]} min={10} max={75} step={1} onValueChange={([v]) => setAge(v ?? 25)} className="mt-4" />
         </div>
       ),
     },
@@ -254,7 +254,7 @@ function Onboarding() {
     );
   }
 
-  const s = screens[step];
+  const s = screens[step] ?? screens[0]!;
   return (
     <div className="flex min-h-[80vh] flex-col px-5 pb-8 pt-6">
       <div className="flex gap-1">

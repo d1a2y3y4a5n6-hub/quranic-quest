@@ -71,7 +71,7 @@ function Quiz({
     );
   }
 
-  const current = questions[index];
+  const current = questions[index] ?? questions[0]!;
   return (
     <section className="card-noor mt-4 p-4">
       <div className="flex items-center justify-between">
