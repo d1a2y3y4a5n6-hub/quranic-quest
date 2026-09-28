@@ -60,7 +60,7 @@ function Garden() {
       <section className="card-noor mt-4 p-4">
         <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Your orchard</p>
         <div className="mt-3 grid grid-cols-10 gap-1.5">
-          {Array.from({ length: Math.max(TREES_PER_QURAN, Math.ceil((g.trees + 1) / 10) * 10) }).map((_, i) => (
+          {Array.from({ length: Math.max(TREES_PER_QURAN, Math.ceil((g.trees + 1) / TREES_PER_QURAN) * TREES_PER_QURAN) }).map((_, i) => (
             <TreeDeciduous key={i} aria-hidden="true" className={`size-6 ${i < g.trees ? "text-primary" : "text-muted"}`} />
           ))}
         </div>
