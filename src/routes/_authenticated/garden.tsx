@@ -35,7 +35,7 @@ function Garden() {
 
       <section className="card-noor geo-pattern mt-4 grid place-items-center p-6">
         <div className="grid h-36 place-items-end">
-          {g.progress < 0.25 ? (
+          {g.progress < 0.35 ? (
             <Sprout aria-hidden="true" className="text-primary" style={{ width: size, height: size }} />
           ) : (
             <TreeDeciduous aria-hidden="true" className="text-primary" style={{ width: size, height: size }} />
