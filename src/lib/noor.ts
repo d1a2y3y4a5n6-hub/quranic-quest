@@ -406,7 +406,7 @@ export function useSaveOnboarding() {
 }
 
 export const DAYS_PER_TREE = 60;
-export const TREES_PER_QURAN = 10;
+export const TREES_PER_QURAN = 3; // 3 trees x ~2 months = 6 consistent months per Quran
 
 /** Days where both the lesson and dhikr targets were met. */
 export function useGarden() {
