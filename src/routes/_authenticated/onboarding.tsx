@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, animate } from "motion/react";
+import { Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { AppIcon } from "@/components/AppIcon";
@@ -27,31 +29,64 @@ const QURAN_NOW = ["Rarely or never", "Only in Ramadan", "A few times a week", "
 const MINUTES = [5, 10, 15, 20, 30];
 const DHIKR = [33, 100, 300, 500];
 
+const ease = [0.22, 1, 0.36, 1] as const;
+
+function Option({ label, on, onClick, i }: { label: string; on: boolean; onClick: () => void; i: number }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 + i * 0.04, duration: 0.35, ease }}
+      whileTap={{ scale: 0.98 }}
+      className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left text-[15px] transition-colors ${
+        on ? "border-primary bg-brand-soft text-foreground" : "border-border bg-card hover:border-primary/40"
+      }`}
+    >
+      {label}
+      <span
+        className={`grid size-5 shrink-0 place-items-center rounded-full border transition-all ${
+          on ? "border-primary bg-primary text-primary-foreground" : "border-border"
+        }`}
+      >
+        {on && <Check className="size-3" strokeWidth={3} />}
+      </span>
+    </motion.button>
+  );
+}
+
 function Chips({ options, value, onChange, multi }: { options: string[]; value: string[]; onChange: (v: string[]) => void; multi?: boolean }) {
   return (
-    <div className="mt-4 flex flex-col gap-2">
-      {options.map((o) => {
+    <div className="flex flex-col gap-2.5">
+      {options.map((o, i) => {
         const on = value.includes(o);
         return (
-          <Button
-            key={o}
-            type="button"
-            variant={on ? "default" : "outline"}
-            onClick={() => onChange(multi ? (on ? value.filter((x) => x !== o) : [...value, o]) : [o])}
-            className="h-auto justify-start rounded-xl px-4 py-3 text-left text-[14px]"
-          >
-            {o}
-          </Button>
+          <Option key={o} i={i} label={o} on={on} onClick={() => onChange(multi ? (on ? value.filter((x) => x !== o) : [...value, o]) : [o])} />
         );
       })}
     </div>
   );
 }
 
+function CountUp({ to, decimals = 0 }: { to: number; decimals?: number }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const c = animate(0, to, { duration: 1.2, ease, onUpdate: setV });
+    return () => c.stop();
+  }, [to]);
+  return <>{v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</>;
+}
+
+function BigValue({ children }: { children: React.ReactNode }) {
+  return <p className="text-center font-display text-[64px] font-semibold leading-none tracking-tight tabular-nums">{children}</p>;
+}
+
 function Onboarding() {
   const navigate = useNavigate();
   const save = useSaveOnboarding();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1); // -1 = welcome
+  const [dir, setDir] = useState(1);
   const [hours, setHours] = useState(3);
   const [apps, setApps] = useState<string[]>(["Instagram", "TikTok", "YouTube"]);
   const [when, setWhen] = useState<string[]>([]);
@@ -66,6 +101,15 @@ function Onboarding() {
 
   const TOTAL = 10;
   const m = lifeMaths(hours, age, minutes);
+  const go = (n: number) => {
+    setDir(n > step ? 1 : -1);
+    setStep(n);
+  };
+  // Single-choice questions advance on their own after a short beat, like Duolingo/Headspace.
+  const pickThenNext = (set: (v: string[]) => void) => (v: string[]) => {
+    set(v);
+    setTimeout(() => go(step + 1), 280);
+  };
 
   async function finish() {
     await save.mutateAsync({
@@ -80,44 +124,62 @@ function Onboarding() {
     navigate({ to: "/today", replace: true });
   }
 
-  const screens: Array<{ title: string; hint?: string; body: React.ReactNode; ok?: boolean }> = [
+  const screens: Array<{ title: string; hint?: string; body: React.ReactNode; ok?: boolean; auto?: boolean }> = [
     {
       title: "How many hours a day do you spend on social media?",
-      hint: "Be honest — check your phone's screen time if you can.",
+      hint: "Check your phone's screen time if you can.",
       body: (
-        <div className="mt-6">
-          <p className="text-center font-display text-[48px] font-semibold">{hours}h</p>
-          <Slider value={[hours]} min={0.5} max={12} step={0.5} onValueChange={([v]) => setHours(v ?? 3)} className="mt-4" />
+        <div className="pt-8">
+          <BigValue>
+            {hours}
+            <span className="text-[28px] text-muted-foreground">h</span>
+          </BigValue>
+          <Slider value={[hours]} min={0.5} max={12} step={0.5} onValueChange={([v]) => setHours(v ?? 3)} className="mt-10" />
+          <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+            <span>30m</span>
+            <span>12h</span>
+          </div>
         </div>
       ),
     },
     {
       title: "Which apps take most of your time?",
-      hint: "These will stay locked until your daily target is done.",
+      hint: "These stay locked until your daily target is done.",
       ok: apps.length > 0,
       body: (
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {APPS.map((a) => {
+        <div className="grid grid-cols-4 gap-2.5">
+          {APPS.map((a, i) => {
             const on = apps.includes(a);
             return (
-              <Button
+              <motion.button
                 key={a}
                 type="button"
-                variant={on ? "default" : "outline"}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.03, duration: 0.3, ease }}
+                whileTap={{ scale: 0.94 }}
                 onClick={() => setApps(on ? apps.filter((x) => x !== a) : [...apps, a])}
-                className="flex h-auto flex-col gap-1 rounded-xl py-3 text-[10px]"
+                className={`relative flex flex-col items-center gap-1.5 rounded-2xl border py-3.5 text-[10px] transition-colors ${
+                  on ? "border-primary bg-brand-soft" : "border-border bg-card"
+                }`}
               >
                 <AppIcon name={a} />
                 {a}
-              </Button>
+                {on && (
+                  <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </span>
+                )}
+              </motion.button>
             );
           })}
         </div>
       ),
     },
-    { title: "When do you scroll the most?", ok: when.length > 0, body: <Chips options={TIMES} value={when} onChange={setWhen} multi /> },
+    { title: "When do you scroll the most?", hint: "Pick all that apply.", ok: when.length > 0, body: <Chips options={TIMES} value={when} onChange={setWhen} multi /> },
     {
       title: "Why do you want to change this?",
+      hint: "Pick all that apply.",
       ok: why.length > 0 || whyOwn.trim().length > 0,
       body: (
         <>
@@ -126,48 +188,54 @@ function Onboarding() {
             value={whyOwn}
             onChange={(e) => setWhyOwn(e.target.value)}
             placeholder="Or in your own words…"
-            className="mt-3 w-full rounded-xl border border-border bg-card px-3.5 py-3 text-[14px] outline-none focus:border-primary"
+            className="mt-2.5 w-full rounded-2xl border border-border bg-card px-4 py-4 text-[15px] outline-none transition-colors focus:border-primary"
           />
         </>
       ),
     },
-    { title: "How do you usually feel after scrolling?", ok: feel.length > 0, body: <Chips options={FEEL} value={feel} onChange={setFeel} /> },
+    { title: "How do you usually feel after scrolling?", auto: true, ok: feel.length > 0, body: <Chips options={FEEL} value={feel} onChange={pickThenNext(setFeel)} /> },
     {
       title: "How old are you?",
-      hint: "Used only to estimate the years ahead of you.",
+      hint: "Only used to estimate the years ahead of you.",
       body: (
-        <div className="mt-6">
-          <p className="text-center font-display text-[48px] font-semibold">{age}</p>
-          <Slider value={[age]} min={10} max={75} step={1} onValueChange={([v]) => setAge(v ?? 25)} className="mt-4" />
+        <div className="pt-8">
+          <BigValue>{age}</BigValue>
+          <Slider value={[age]} min={10} max={75} step={1} onValueChange={([v]) => setAge(v ?? 25)} className="mt-10" />
         </div>
       ),
     },
-    { title: "How often do you read Quran right now?", ok: quranNow.length > 0, body: <Chips options={QURAN_NOW} value={quranNow} onChange={setQuranNow} /> },
+    { title: "How often do you read Quran right now?", auto: true, ok: quranNow.length > 0, body: <Chips options={QURAN_NOW} value={quranNow} onChange={pickThenNext(setQuranNow)} /> },
     {
       title: "How many minutes a day will you give to Noor?",
-      hint: "Your lessons are paced around this — about 6 minutes each.",
+      hint: "Lessons are paced around this — about 6 minutes each.",
       body: (
-        <div className="mt-4 grid grid-cols-5 gap-2">
-          {MINUTES.map((n) => (
-            <Button key={n} type="button" variant={minutes === n ? "default" : "outline"} onClick={() => setMinutes(n)} className="h-auto flex-col rounded-xl py-3">
-              <span className="font-display text-[20px] font-semibold">{n}</span>
-              <span className="text-[10px]">min</span>
-            </Button>
-          ))}
-          <p className="col-span-5 mt-2 text-center text-[13px] text-muted-foreground">
-            = {lessonsForMinutes(minutes)} lesson{lessonsForMinutes(minutes) === 1 ? "" : "s"} a day
-          </p>
+        <div className="flex flex-col gap-2.5">
+          {MINUTES.map((n, i) => {
+            const l = lessonsForMinutes(n);
+            return <Option key={n} i={i} label={`${n} minutes · ${l} lesson${l === 1 ? "" : "s"} a day`} on={minutes === n} onClick={() => setMinutes(n)} />;
+          })}
         </div>
       ),
     },
     {
       title: "How many adhkar a day?",
       body: (
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {DHIKR.map((n) => (
-            <Button key={n} type="button" variant={dhikr === n ? "default" : "outline"} onClick={() => setDhikr(n)} className="h-auto rounded-xl py-4 font-display text-[18px]">
+        <div className="grid grid-cols-2 gap-2.5">
+          {DHIKR.map((n, i) => (
+            <motion.button
+              key={n}
+              type="button"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.35, ease }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setDhikr(n)}
+              className={`rounded-2xl border py-7 font-display text-[28px] font-semibold transition-colors ${
+                dhikr === n ? "border-primary bg-brand-soft text-primary" : "border-border bg-card"
+              }`}
+            >
               {n}
-            </Button>
+            </motion.button>
           ))}
         </div>
       ),
@@ -179,105 +247,181 @@ function Onboarding() {
         <textarea
           value={intention}
           onChange={(e) => setIntention(e.target.value)}
-          rows={3}
+          rows={4}
           placeholder="I want to finish the Quran with understanding, for the sake of Allah."
-          className="mt-4 w-full rounded-xl border border-border bg-card px-3.5 py-3 text-[14px] outline-none focus:border-primary"
+          className="w-full resize-none rounded-2xl border border-border bg-card px-4 py-4 font-display text-[17px] leading-relaxed outline-none transition-colors focus:border-primary"
         />
       ),
     },
   ];
 
+  const variants = {
+    enter: (d: number) => ({ opacity: 0, x: d * 40 }),
+    center: { opacity: 1, x: 0 },
+    exit: (d: number) => ({ opacity: 0, x: d * -40 }),
+  };
+
+  // Welcome
+  if (step === -1) {
+    return (
+      <div className="relative flex min-h-[100dvh] flex-col overflow-hidden px-6 pb-10">
+        <div className="geo-pattern pointer-events-none absolute inset-0 opacity-40" />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease }}
+          className="relative flex flex-1 flex-col items-center justify-center text-center"
+        >
+          <p className="text-arabic text-[44px] text-primary">بِسْمِ ٱللَّهِ</p>
+          <h1 className="mt-6 font-display text-[34px] font-semibold leading-tight">
+            Turn scrolling
+            <br />
+            into <span className="text-primary">remembrance</span>
+          </h1>
+          <p className="mt-3 max-w-[300px] text-[15px] text-muted-foreground">
+            Ten quick questions, about a minute. We'll build your daily plan around your answers.
+          </p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.5 }} className="relative">
+          <Button onClick={() => go(0)} className="h-auto w-full rounded-full py-4 text-[15px]">
+            Let's begin
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Results
   if (step >= TOTAL) {
     const maxY = Math.max(m.scrollYears, m.deenYears, 0.1);
     const deenShare = Math.round((m.deenYears / (m.scrollYears + m.deenYears || 1)) * 100);
+    const lpd = lessonsForMinutes(minutes);
+    const reveal = (i: number) => ({
+      initial: { opacity: 0, y: 14 },
+      animate: { opacity: 1, y: 0 },
+      transition: { delay: 0.15 + i * 0.25, duration: 0.6, ease },
+    });
     return (
-      <div className="px-5 pb-10 pt-6">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Your numbers</p>
-        <h1 className="mt-1 font-display text-[26px] font-semibold leading-tight">Where your time is going</h1>
-
-        <div className="card-noor mt-4 p-4">
-          <p className="text-[12px] text-muted-foreground">At {hours}h a day, scrolling takes</p>
-          <p className="font-display text-[32px] font-semibold text-destructive">{m.hoursPerYear.toLocaleString()} hours a year</p>
-          <p className="mt-1 text-[13px]">
-            Over the next {m.yearsLeft} years that is <b>{m.scrollYears.toFixed(1)} full years</b> of your life — about{" "}
-            <b>{m.scrollWakingYears.toFixed(1)} years</b> of waking life.
+      <div className="flex min-h-[100dvh] flex-col px-6 pb-8 pt-8">
+        <motion.p {...reveal(0)} className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          Your numbers
+        </motion.p>
+        <motion.div {...reveal(0)}>
+          <p className="mt-3 text-[15px] text-muted-foreground">At {hours}h a day, scrolling takes</p>
+          <p className="font-display text-[44px] font-semibold leading-tight text-destructive tabular-nums">
+            <CountUp to={m.hoursPerYear} />
+            <span className="text-[20px]"> hrs/yr</span>
           </p>
-        </div>
+          <p className="mt-1 text-[14px] leading-relaxed">
+            Over {m.yearsLeft} years, that's <b><CountUp to={m.scrollYears} decimals={1} /> years</b> of your life.
+          </p>
+        </motion.div>
 
-        <div className="card-noor mt-3 p-4">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Scrolling vs deen (years of life)</p>
+        <motion.div {...reveal(1)} className="mt-8 space-y-4">
           {[
             { label: "Scrolling", v: m.scrollYears, cls: "bg-destructive" },
-            { label: `Deen (${minutes} min/day)`, v: m.deenYears, cls: "bg-primary" },
-          ].map((b) => (
-            <div key={b.label} className="mt-3">
-              <div className="flex justify-between text-[12px]">
+            { label: `Deen · ${minutes} min/day`, v: m.deenYears, cls: "bg-primary" },
+          ].map((b, i) => (
+            <div key={b.label}>
+              <div className="flex justify-between text-[13px]">
                 <span>{b.label}</span>
-                <span className="font-semibold">{b.v.toFixed(2)} yrs</span>
+                <span className="font-semibold tabular-nums">{b.v.toFixed(2)} yrs</span>
               </div>
-              <div className="mt-1 h-3 overflow-hidden rounded-full bg-muted">
-                <div className={`h-full rounded-full ${b.cls}`} style={{ width: `${Math.max(2, (b.v / maxY) * 100)}%` }} />
+              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-muted">
+                <motion.div
+                  className={`h-full rounded-full ${b.cls}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(2, (b.v / maxY) * 100)}%` }}
+                  transition={{ delay: 0.7 + i * 0.2, duration: 1, ease }}
+                />
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="card-noor mt-3 flex items-center gap-4 p-4">
+        <motion.div {...reveal(2)} className="mt-8 flex items-center gap-4">
           <div
-            className="relative grid size-24 shrink-0 place-items-center rounded-full"
-            style={{ background: `conic-gradient(var(--primary) 0% ${deenShare}%, var(--accent) ${deenShare}% 100%)` }}
+            className="relative grid size-20 shrink-0 place-items-center rounded-full"
+            style={{ background: `conic-gradient(var(--primary) 0% ${deenShare}%, var(--muted) ${deenShare}% 100%)` }}
           >
-            <div className="absolute inset-[8px] rounded-full bg-card" />
+            <div className="absolute inset-[6px] rounded-full bg-background" />
             <span className="relative font-display text-[18px] font-semibold">{deenShare}%</span>
           </div>
-          <p className="text-[13px] leading-relaxed">
-            With Noor you'll give <b>{m.deenYears.toFixed(2)} years</b> of your life to the Quran and dhikr — and turn{" "}
-            {deenShare}% of that screen time toward deen if the minutes come from scrolling.
+          <p className="text-[14px] leading-relaxed">
+            With Noor you'll give <b>{m.deenYears.toFixed(2)} years</b> of your life to the Quran and dhikr.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="mt-3 rounded-xl bg-brand-soft p-4 text-[13px]">
-          <p className="font-semibold text-primary">Your daily plan</p>
-          <p className="mt-1">
-            {lessonsForMinutes(minutes)} lesson{lessonsForMinutes(minutes) === 1 ? "" : "s"} + {dhikr} adhkar a day. {apps.join(", ")} stay locked until done.
+        <motion.div {...reveal(3)} className="mt-8 rounded-2xl bg-brand-soft p-5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-primary">Your daily plan</p>
+          <p className="mt-2 font-display text-[20px] font-semibold leading-snug">
+            {lpd} lesson{lpd === 1 ? "" : "s"} + {dhikr} adhkar
           </p>
-        </div>
+          <div className="mt-3 flex items-center gap-2">
+            {apps.slice(0, 6).map((a) => (
+              <span key={a} className="opacity-60">
+                <AppIcon name={a} />
+              </span>
+            ))}
+            <span className="text-[12px] text-muted-foreground">locked until done</span>
+          </div>
+        </motion.div>
 
+        <div className="flex-1" />
         {save.isError && <p className="mt-3 text-[12px] text-destructive">Could not save. Please try again.</p>}
-        <Button onClick={finish} disabled={save.isPending} className="mt-5 h-auto w-full rounded-full py-3.5 text-[14px]">
-          {save.isPending ? "Saving…" : "Begin, bismillah"}
-        </Button>
-        <Button variant="ghost" onClick={() => setStep(TOTAL - 1)} className="mt-2 w-full">
-          Back
-        </Button>
+        <motion.div {...reveal(4)}>
+          <Button onClick={finish} disabled={save.isPending} className="mt-6 h-auto w-full rounded-full py-4 text-[15px]">
+            {save.isPending ? "Saving…" : "Begin, bismillah"}
+          </Button>
+          <Button variant="ghost" onClick={() => go(TOTAL - 1)} className="mt-1 w-full">
+            Back
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   const s = screens[step] ?? screens[0]!;
   return (
-    <div className="flex min-h-[80vh] flex-col px-5 pb-8 pt-6">
-      <div className="flex gap-1">
-        {screens.map((_, i) => (
-          <span key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-primary" : "bg-muted"}`} />
-        ))}
+    <div className="flex min-h-[100dvh] flex-col px-6 pb-8 pt-5">
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => go(step - 1)} aria-label="Back" className="-ml-2 grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-muted">
+          <ChevronLeft className="size-5" />
+        </button>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="h-full rounded-full bg-primary"
+            animate={{ width: `${((step + 1) / TOTAL) * 100}%` }}
+            transition={{ duration: 0.5, ease }}
+          />
+        </div>
+        <span className="w-9 text-right text-[12px] tabular-nums text-muted-foreground">
+          {step + 1}/{TOTAL}
+        </span>
       </div>
-      <p className="mt-5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-        Question {step + 1} of {TOTAL}
-      </p>
-      <h1 className="mt-1 font-display text-[24px] font-semibold leading-tight">{s.title}</h1>
-      {s.hint && <p className="mt-1 text-[13px] text-muted-foreground">{s.hint}</p>}
-      <div className="flex-1">{s.body}</div>
-      <div className="mt-6 flex gap-2">
-        {step > 0 && (
-          <Button variant="outline" onClick={() => setStep(step - 1)} className="h-auto flex-1 rounded-full py-3.5">
-            Back
-          </Button>
-        )}
-        <Button onClick={() => setStep(step + 1)} disabled={s.ok === false} className="h-auto flex-1 rounded-full py-3.5">
-          {step === TOTAL - 1 ? "See my numbers" : "Next"}
+
+      <AnimatePresence mode="wait" custom={dir}>
+        <motion.div
+          key={step}
+          custom={dir}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.32, ease }}
+          className="flex flex-1 flex-col"
+        >
+          <h1 className="mt-8 font-display text-[26px] font-semibold leading-[1.2]">{s.title}</h1>
+          {s.hint && <p className="mt-2 text-[14px] text-muted-foreground">{s.hint}</p>}
+          <div className="mt-7 flex-1">{s.body}</div>
+        </motion.div>
+      </AnimatePresence>
+
+      {!s.auto && (
+        <Button onClick={() => go(step + 1)} disabled={s.ok === false} className="mt-6 h-auto w-full rounded-full py-4 text-[15px]">
+          {step === TOTAL - 1 ? "See my numbers" : "Continue"}
         </Button>
-      </div>
+      )}
     </div>
   );
 }
